@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const ETHERSCAN_URL = "https://api-rinkeby.etherscan.io/api"
+const ETHERSCAN_URL = "https://api.etherscan.io/api"
 // const LOCAL_PROXY = { protocol: "http", host: "127.0.0.1", port: "7890" }
 const ETHERSCAN_API = "G4HD326AFWRFWHYZI1XEZYDMCNZN8BQKB5"
 
