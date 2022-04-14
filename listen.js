@@ -6,6 +6,7 @@ import { etherscan } from "./etherscan.js"
 import { printBanner } from "./banner.js"
 import { ethers } from "ethers"
 import dotenv from "dotenv"
+import chalk from "chalk"
 
 dotenv.config("./.env")
 
@@ -103,18 +104,17 @@ const alchemy_subscribe = async (network, address) => {
                     method.inputs.forEach((param) => {
                       if (param.type == "address") paramIncludesAddress = true
                     })
-                    if (!paramIncludesAddress) {
+                    if (!paramIncludesAddress && method.inputs.length == 1) {
                       let txLoader = new LoadingAnimation(
                         "sending transaction..."
                       )
                       let minted_amount = 0
-                      for (let hash of minted){
+                      for (let hash of minted) {
                         if (hash == txInfo.to) minted_amount++
                       }
-                      console.log(minted_amount)
                       if (minted_amount < FOLLOW_AMOUNT) {
                         try {
-                          txLoader.start()
+                          // txLoader.start()
                           let follow_tx = await wallet.sendTransaction({
                             to: txInfo.to,
                             gasLimit: txInfo.gas,
@@ -123,12 +123,14 @@ const alchemy_subscribe = async (network, address) => {
                             maxFeePerGas: txInfo.maxFeePerGas,
                             value: 0,
                           })
-                          txLoader.stop()
+                          // txLoader.stop()
                           console.log(
-                            `success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
+                            chalk.green(
+                              `✅success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
+                            )
                           )
                           minted.push(txInfo.to)
-                          console.log(follow_tx)
+                          // console.log(follow_tx)
                           // write the logs
                           const time = new Date()
                           writeLog(TARGET_ADDRESS, {
@@ -148,28 +150,28 @@ const alchemy_subscribe = async (network, address) => {
                           console.error(error)
                         }
                       } else {
-                        console.log("already minted this nft")
+                        console.log(chalk.red("already minted this nft"))
                         loader.start()
                       }
                     } else {
                       console.log(
-                        "param includes address, we can't resolve it yet"
+                        chalk.red("param includes address, we can't resolve it yet / function has more than 1 params, we can't resolve it too")
                       )
                       loader.start()
                     }
                   } else {
-                    console.log(`it's not a minting method`)
+                    console.log(chalk.red(`it's not a minting method`))
                     loader.start()
                   }
                 } else {
-                  console.log(`it's not a ERC721 tx`)
+                  console.log(chalk.red(`it's not a ERC721 tx`))
                   loader.start()
                 }
               } catch (error) {
                 console.error(error)
               }
             } else {
-              console.log(`it's not a free tx`)
+              console.log(chalk.red(`it's not a free tx`))
               loader.start()
             }
           }
