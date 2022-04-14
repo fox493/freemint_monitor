@@ -50,3 +50,21 @@ export const writeLog = (address, tx) => {
     })
   }
 }
+
+export const getMinted =  () => {
+  return new Promise(resolve => {
+    fs.readFile('./mintedAddress.json', (err, data) => {
+      if(err) console.error(err)
+      let mintedAddress = JSON.parse(data)
+      resolve(mintedAddress)
+    })
+  })
+}
+
+export const writeMinted = async (address) => {
+  let mintedAddress = await getMinted()
+  mintedAddress.push(address)
+  fs.writeFile('./mintedAddress.json', JSON.stringify(mintedAddress, null, 4), () => {
+    console.log(`successful writting minted address`)
+  })
+}
