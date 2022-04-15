@@ -103,7 +103,7 @@ const alchemy_subscribe = async (network, address) => {
                       if (param.type == "address") paramIncludesAddress = true
                     })
                     if (!paramIncludesAddress && method.inputs.length == 1) {
-                      if (txInfo.input.slice(txInfo.input.length - 1) <= 6) {
+                      if (txInfo.input.slice(txInfo.input.length - 2) <= 6) {
                         let mintedAddress = await getMinted()
                         if (!mintedAddress.includes(txInfo.to)) {
                           try {
