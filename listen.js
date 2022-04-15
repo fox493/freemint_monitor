@@ -1,4 +1,10 @@
-import { checkERC721, ERC721, writeLog, getMinted, writeMinted } from "./utils.js"
+import {
+  checkERC721,
+  ERC721,
+  writeLog,
+  getMinted,
+  writeMinted,
+} from "./utils.js"
 import { createAlchemyWeb3 } from "@alch/alchemy-web3"
 import { LoadingAnimation } from "./Loading.js"
 import { sendEmail } from "./send_mail.js"
@@ -61,7 +67,7 @@ const alchemy_subscribe = async (network, address) => {
       {
         label: "💻 Monored Address",
         content: address,
-      }
+      },
     ],
     80
   )
@@ -78,28 +84,30 @@ const alchemy_subscribe = async (network, address) => {
         if (txInfo !== null) {
           if (txInfo.from.toLowerCase() === address.toLowerCase()) {
             console.log(txInfo.hash)
-            let mintedAddress = await getMinted()
-            if (!mintedAddress.includes(txInfo.to)) {
-              if (Number(txInfo.value) == "0") {
-                try {
-                  console.log("getting abi...")
-                  let abi = await etherscan.getABIbyContractAddress(txInfo.to)
-                  if (checkERC721(abi)) {
-                    console.log(
-                      `it's a ERC721 tx, contract address: ${txInfo.to}`
-                    )
-                    const contract = new ethers.Contract(txInfo.to, abi, wallet)
-                    let method = contract.interface.getFunction(
-                      txInfo.input.slice(0, 10)
-                    )
-                    if (!ERC721.includes(method.name)) {
-                      let paramIncludesAddress = false
-                      method.inputs.forEach((param) => {
-                        if (param.type == "address") paramIncludesAddress = true
-                      })
-                      if (!paramIncludesAddress && method.inputs.length == 1) {
-                        if (txInfo.input.slice(txInfo.input.length - 1) <= 6) {
+
+            if (Number(txInfo.value) == "0") {
+              try {
+                console.log("getting abi...")
+                let abi = await etherscan.getABIbyContractAddress(txInfo.to)
+                if (checkERC721(abi)) {
+                  console.log(
+                    `it's a ERC721 tx, contract address: ${txInfo.to}`
+                  )
+                  const contract = new ethers.Contract(txInfo.to, abi, wallet)
+                  let method = contract.interface.getFunction(
+                    txInfo.input.slice(0, 10)
+                  )
+                  if (!ERC721.includes(method.name)) {
+                    let paramIncludesAddress = false
+                    method.inputs.forEach((param) => {
+                      if (param.type == "address") paramIncludesAddress = true
+                    })
+                    if (!paramIncludesAddress && method.inputs.length == 1) {
+                      if (txInfo.input.slice(txInfo.input.length - 1) <= 6) {
+                        let mintedAddress = await getMinted()
+                        if (!mintedAddress.includes(txInfo.to)) {
                           try {
+                            writeMinted(txInfo.to)
                             let follow_tx = await wallet.sendTransaction({
                               to: txInfo.to,
                               gasLimit: txInfo.gas,
@@ -109,7 +117,6 @@ const alchemy_subscribe = async (network, address) => {
                               value: 0,
                             })
                             await follow_tx.wait()
-                            writeMinted(txInfo.to)
                             console.log(
                               chalk.green(
                                 `✅success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
@@ -136,34 +143,35 @@ const alchemy_subscribe = async (network, address) => {
                             console.error(error.message)
                           }
                         } else {
-                          console.log("minting amount is more than 6")
+                          console.log(chalk.red("this nft has been minted"))
                           loader.start()
                         }
                       } else {
-                        console.log(
-                          chalk.red(
-                            "param includes address, we can't resolve it yet / function has more than 1 params, we can't resolve it too"
-                          )
-                        )
+                        console.log(chalk.red("minting amount is more than 6"))
                         loader.start()
                       }
                     } else {
-                      console.log(chalk.red(`it's not a minting method`))
+                      console.log(
+                        chalk.red(
+                          "param includes address, we can't resolve it yet / function has more than 1 params, we can't resolve it too"
+                        )
+                      )
                       loader.start()
                     }
                   } else {
-                    console.log(chalk.red(`it's not a ERC721 tx`))
+                    console.log(chalk.red(`it's not a minting method`))
                     loader.start()
                   }
-                } catch (error) {
-                  console.error(error)
+                } else {
+                  console.log(chalk.red(`it's not a ERC721 tx`))
+                  loader.start()
                 }
-              } else {
-                console.log(chalk.red(`it's not a free tx`))
-                loader.start()
+              } catch (error) {
+                console.error(error)
               }
             } else {
-              console.log(`this nft has been minted`)
+              console.log(chalk.red(`it's not a free tx`))
+              loader.start()
             }
           }
         }
