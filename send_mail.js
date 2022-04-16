@@ -22,5 +22,4 @@ export async function sendEmail(network, txHash) {
       network == "mainnet" ? "" : network + "."
     }etherscan.io/tx/${txHash}</p>`, // html body
   })
-  console.log("Mail sent successfully!")
 }

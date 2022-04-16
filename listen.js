@@ -1,10 +1,3 @@
-import {
-  checkERC721,
-  ERC721,
-  writeLog,
-  getMinted,
-  writeMinted,
-} from "./utils.js"
 import { createAlchemyWeb3 } from "@alch/alchemy-web3"
 import { LoadingAnimation } from "./Loading.js"
 import { sendEmail } from "./send_mail.js"
@@ -13,6 +6,13 @@ import { printBanner } from "./banner.js"
 import { ethers } from "ethers"
 import dotenv from "dotenv"
 import chalk from "chalk"
+import {
+  checkERC721,
+  ERC721,
+  writeLog,
+  getMinted,
+  writeMinted,
+} from "./utils.js"
 
 dotenv.config("./.env")
 
@@ -25,7 +25,7 @@ if (!arg[0]) {
 }
 
 // config the loading animation
-const loader = new LoadingAnimation(`monitoring...`)
+const loader = new LoadingAnimation(`🕵️‍♀️  monitoring...`)
 
 const main = async () => {
   console.clear()
@@ -42,6 +42,7 @@ const alchemy_subscribe = async (network, address) => {
   let alchemy_url_2 = `https://eth-${network}.alchemyapi.io/v2/${process.env.ALCHEMY_KEY2}`
   let web3 = createAlchemyWeb3(alchemy_url_1)
   const provider = new ethers.providers.JsonRpcProvider(alchemy_url_2)
+
   let wallet
   if (network == "mainnet")
     wallet = new ethers.Wallet(process.env.MAINNET_PRIVATE_KEY, provider)
@@ -68,6 +69,10 @@ const alchemy_subscribe = async (network, address) => {
         label: "💻 Monored Address",
         content: address,
       },
+      {
+        label: "📧 E-mail",
+        content: `${process.env.EMAIL_ACCOUNT}@qq.com`,
+      },
     ],
     80
   )
@@ -79,19 +84,24 @@ const alchemy_subscribe = async (network, address) => {
       address: address,
     },
     async (err, txInfo) => {
+      const time = new Date()
       if (!err) {
         loader.stop()
         if (txInfo !== null) {
           if (txInfo.from.toLowerCase() === address.toLowerCase()) {
-            console.log(txInfo.hash)
-
+            console.log(
+              `${"-".repeat(40)} ${time.toLocaleString()} ${"-".repeat(40)}`
+            )
+            console.log(`🔍 Found a transaction: ${txInfo.hash}`)
             if (Number(txInfo.value) == "0") {
               try {
-                console.log("getting abi...")
+                console.log("🤖 getting abi...")
                 let abi = await etherscan.getABIbyContractAddress(txInfo.to)
                 if (checkERC721(abi)) {
                   console.log(
-                    `it's a ERC721 tx, contract address: ${txInfo.to}`
+                    `🤑 it's an ERC721 tx, contract address: ${chalk.green(
+                      txInfo.to
+                    )}`
                   )
                   const contract = new ethers.Contract(txInfo.to, abi, wallet)
                   let method = contract.interface.getFunction(
@@ -103,11 +113,12 @@ const alchemy_subscribe = async (network, address) => {
                       if (param.type == "address") paramIncludesAddress = true
                     })
                     if (!paramIncludesAddress && method.inputs.length == 1) {
-                      if (txInfo.input.slice(txInfo.input.length - 2) <= 6) {
+                      if (txInfo.input.slice(txInfo.input.length - 2) <= 3) {
                         let mintedAddress = await getMinted()
                         if (!mintedAddress.includes(txInfo.to)) {
                           try {
                             writeMinted(txInfo.to)
+                            console.log("🚚 sending transaction...")
                             let follow_tx = await wallet.sendTransaction({
                               to: txInfo.to,
                               gasLimit: txInfo.gas,
@@ -119,13 +130,12 @@ const alchemy_subscribe = async (network, address) => {
                             await follow_tx.wait()
                             console.log(
                               chalk.green(
-                                `✅success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
+                                `✅ success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
                               )
                             )
                             minted.push(txInfo.to)
                             // console.log(follow_tx)
                             // write the logs
-                            const time = new Date()
                             writeLog(TARGET_ADDRESS, {
                               contractAddress: txInfo.to,
                               txHash: txInfo.hash,
@@ -136,41 +146,48 @@ const alchemy_subscribe = async (network, address) => {
                               process.env.EMAIL_ACCOUNT &&
                               process.env.EMAIL_PASSWARD
                             ) {
-                              await sendEmail(network, follow_tx.hash)
+                              try {
+                                await sendEmail(network, follow_tx.hash)
+                                console.log("📧 Mail sending successed!")
+                              } catch (error) {
+                                console.log("❌ Mail sending failed!")
+                              }
                             }
                             loader.start()
                           } catch (error) {
                             console.error(error.message)
                           }
                         } else {
-                          console.log(chalk.red("this nft has been minted"))
+                          console.log(chalk.red("❌ this nft has been minted"))
                           loader.start()
                         }
                       } else {
-                        console.log(chalk.red("minting amount is more than 6"))
+                        console.log(
+                          chalk.red("❌ minting amount is more than 3")
+                        )
                         loader.start()
                       }
                     } else {
                       console.log(
                         chalk.red(
-                          "param includes address, we can't resolve it yet / function has more than 1 params, we can't resolve it too"
+                          "❌ param includes address, we can't resolve it yet / function has more than 1 params, we can't resolve it too"
                         )
                       )
                       loader.start()
                     }
                   } else {
-                    console.log(chalk.red(`it's not a minting method`))
+                    console.log(chalk.red(`❌ it's not a minting method`))
                     loader.start()
                   }
                 } else {
-                  console.log(chalk.red(`it's not a ERC721 tx`))
+                  console.log(chalk.red(`❌ it's not an ERC721 tx`))
                   loader.start()
                 }
               } catch (error) {
                 console.error(error)
               }
             } else {
-              console.log(chalk.red(`it's not a free tx`))
+              console.log(chalk.red(`❌ it's not a free tx`))
               loader.start()
             }
           }
