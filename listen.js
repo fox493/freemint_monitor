@@ -140,7 +140,7 @@ const alchemy_subscribe = async (network, address) => {
                         if (param.type == "address") paramIncludesAddress = true
                       })
                       if (!paramIncludesAddress && method.inputs.length == 1) {
-                        if (txInfo.input.slice(txInfo.input.length - 2) <= 3) {
+                        if (txInfo.input.slice(txInfo.input.length - 2) <= 5) {
                           let mintedAddress = await getMinted()
                           if (!mintedAddress.includes(txInfo.to)) {
                             try {
@@ -196,7 +196,7 @@ const alchemy_subscribe = async (network, address) => {
                           }
                         } else {
                           console.log(
-                            chalk.red("❌ minting amount is more than 3")
+                            chalk.red("❌ minting amount is more than 5")
                           )
                           loader.start()
                         }
