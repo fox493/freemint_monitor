@@ -1,8 +1,8 @@
 import { createAlchemyWeb3 } from "@alch/alchemy-web3"
-import { LoadingAnimation } from "../Loading.js"
-import { sendEmail } from "../send_mail.js"
+import { LoadingAnimation } from "./Loading.js"
+import { sendEmail } from "./send_mail.js"
 import { etherscan } from "./etherscan.js"
-import { printBanner } from "../banner.js"
+import { printBanner } from "./banner.js"
 import { ethers } from "ethers"
 import dotenv from "dotenv"
 import chalk from "chalk"
@@ -12,7 +12,7 @@ import {
   writeLog,
   getMinted,
   writeMinted,
-} from "../utils.js"
+} from "./utils.js"
 
 dotenv.config("./.env")
 
@@ -162,7 +162,6 @@ const alchemy_subscribe = async (network, address) => {
                                 )
                               )
                               minted.push(txInfo.to)
-                              // console.log(follow_tx)
                               // write the logs
                               writeLog(TARGET_ADDRESS, {
                                 contractAddress: txInfo.to,
