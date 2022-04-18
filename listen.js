@@ -111,6 +111,7 @@ const alchemy_subscribe = async (network, address) => {
     },
     async (err, txInfo) => {
       const time = new Date()
+      const mint_amount = PAYABLE ? 4 : 6
       if (!err) {
         loader.stop()
         if (txInfo !== null) {
@@ -140,7 +141,7 @@ const alchemy_subscribe = async (network, address) => {
                         if (param.type == "address") paramIncludesAddress = true
                       })
                       if (!paramIncludesAddress && method.inputs.length == 1) {
-                        if (txInfo.input.slice(txInfo.input.length - 2) <= 4) {
+                        if (txInfo.input.slice(txInfo.input.length - 2) <= mint_amount) {
                           let mintedAddress = await getMinted()
                           if (!mintedAddress.includes(txInfo.to)) {
                             try {
@@ -196,7 +197,7 @@ const alchemy_subscribe = async (network, address) => {
                           }
                         } else {
                           console.log(
-                            chalk.red("❌ minting amount is more than 4")
+                            chalk.red("❌ minting amount is more than 3")
                           )
                           loader.start()
                         }
