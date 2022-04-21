@@ -3,7 +3,7 @@ import { LoadingAnimation } from "./Loading.js"
 import { sendEmail } from "./send_mail.js"
 import { etherscan } from "./etherscan.js"
 import { printBanner } from "./banner.js"
-import {playSound} from "play_alarm.js"
+import { playSound } from "./play_alarm.js"
 import { ethers } from "ethers"
 import dotenv from "dotenv"
 import chalk from "chalk"
@@ -142,7 +142,10 @@ const alchemy_subscribe = async (network, address) => {
                         if (param.type == "address") paramIncludesAddress = true
                       })
                       if (!paramIncludesAddress && method.inputs.length == 1) {
-                        if (txInfo.input.slice(txInfo.input.length - 2) <= mint_amount) {
+                        if (
+                          txInfo.input.slice(txInfo.input.length - 2) <=
+                          mint_amount
+                        ) {
                           let mintedAddress = await getMinted()
                           if (!mintedAddress.includes(txInfo.to)) {
                             try {
@@ -177,7 +180,7 @@ const alchemy_subscribe = async (network, address) => {
                               ) {
                                 try {
                                   await sendEmail(
-                                    '发送mint交易😊',
+                                    "发送mint交易😊",
                                     `<b>MINT 成功, 下方链接跳转etherscan</b><p>https://${
                                       network == "mainnet" ? "" : network + "."
                                     }etherscan.io/tx/${txInfo.hash}</p>`
@@ -211,7 +214,7 @@ const alchemy_subscribe = async (network, address) => {
                           )
                         )
                         await sendEmail(
-                          '前端MINT事件😊',
+                          "前端MINT事件😊",
                           `<b>该交易可能需要前端mint,请自行检查!下方链接跳转etherscan</b><p>https://${
                             network == "mainnet" ? "" : network + "."
                           }etherscan.io/tx/${txInfo.hash}</p>`
