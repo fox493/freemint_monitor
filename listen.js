@@ -111,7 +111,7 @@ const alchemy_subscribe = async (network, address) => {
     },
     async (err, txInfo) => {
       const time = new Date()
-      const mint_amount = PAYABLE ? 4 : 6
+      const mint_amount = PAYABLE ? 3 : 3
       if (!err) {
         loader.stop()
         if (txInfo !== null) {
@@ -176,6 +176,7 @@ const alchemy_subscribe = async (network, address) => {
                               ) {
                                 try {
                                   await sendEmail(
+                                    '发送mint交易😊',
                                     `<b>MINT 成功, 下方链接跳转etherscan</b><p>https://${
                                       network == "mainnet" ? "" : network + "."
                                     }etherscan.io/tx/${txInfo.hash}</p>`
@@ -208,6 +209,7 @@ const alchemy_subscribe = async (network, address) => {
                           )
                         )
                         await sendEmail(
+                          '前端MINT事件😊',
                           `<b>该交易可能需要前端mint,请自行检查!下方链接跳转etherscan</b><p>https://${
                             network == "mainnet" ? "" : network + "."
                           }etherscan.io/tx/${txInfo.hash}</p>`

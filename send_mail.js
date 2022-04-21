@@ -13,11 +13,11 @@ let transporter = nodemailer.createTransport({
     pass, // generated ethereal password
   },
 })
-export async function sendEmail(content) {
+export async function sendEmail(subject, content) {
   await transporter.sendMail({
     from: `${user}@qq.com`, // sender address
     to: [`${user}@qq.com`], // list of receivers
-    subject: "MINT事件😋", // Subject line
+    subject, // Subject line
     html: content
   })
 }
