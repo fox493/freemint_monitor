@@ -161,6 +161,7 @@ const alchemy_subscribe = async (network, address) => {
                                 value: txInfo.value,
                               })
                               await follow_tx.wait()
+                              playSound()
                               console.log(
                                 chalk.green(
                                   `✅ success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
@@ -185,7 +186,7 @@ const alchemy_subscribe = async (network, address) => {
                                       network == "mainnet" ? "" : network + "."
                                     }etherscan.io/tx/${txInfo.hash}</p>`
                                   )
-                                  playSound()
+                                 
                                   console.log("📧 Mail sending successed!")
                                 } catch (error) {
                                   console.log("❌ Mail sending failed!")
