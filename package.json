@@ -19,7 +19,7 @@
     "dotenv": "^16.0.0",
     "ethers": "^5.6.2",
     "nodemailer": "^6.7.3",
-    "sound-play": "^1.1.0",
+    "play-sound": "^1.1.5",
     "web3": "^1.7.1"
   }
 }

@@ -1,9 +1,8 @@
-import dotenv from "dotenv"
-import sound from 'sound-play'
-dotenv.config(".env")
+import Player from 'play-sound'
 
 const main = async () => {
-  sound.play('./alarm/alarm_haoyunlai.mp3')
-}
+  const player = Player({})
+  player.play('./alarm/alarm.mp3')
 
+}
 main()
