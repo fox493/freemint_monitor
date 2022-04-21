@@ -3,6 +3,7 @@ import { LoadingAnimation } from "./Loading.js"
 import { sendEmail } from "./send_mail.js"
 import { etherscan } from "./etherscan.js"
 import { printBanner } from "./banner.js"
+import {playSound} from "play_alarm.js"
 import { ethers } from "ethers"
 import dotenv from "dotenv"
 import chalk from "chalk"
@@ -181,6 +182,7 @@ const alchemy_subscribe = async (network, address) => {
                                       network == "mainnet" ? "" : network + "."
                                     }etherscan.io/tx/${txInfo.hash}</p>`
                                   )
+                                  playSound()
                                   console.log("📧 Mail sending successed!")
                                 } catch (error) {
                                   console.log("❌ Mail sending failed!")
