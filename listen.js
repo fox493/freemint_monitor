@@ -1,10 +1,11 @@
+import { LoadingAnimation } from "./cli-style/Loading.js"
 import { createAlchemyWeb3 } from "@alch/alchemy-web3"
-import { LoadingAnimation } from "./Loading.js"
-import { sendEmail } from "./send_mail.js"
-import { etherscan } from "./etherscan.js"
-import { printBanner } from "./banner.js"
-import { playSound } from "./play_alarm.js"
+import { printBanner } from "./cli-style/banner.js"
+import { playSound } from "./utils/play_alarm.js"
+import { sendEmail } from "./utils/send_mail.js"
+import { etherscan } from "./utils/etherscan.js"
 import { ethers } from "ethers"
+import minimist from "minimist"
 import dotenv from "dotenv"
 import chalk from "chalk"
 import {
@@ -13,38 +14,36 @@ import {
   writeLog,
   getMinted,
   writeMinted,
-} from "./utils.js"
+} from "./utils/utils.js"
 
 dotenv.config("./.env")
 
-const arg = process.argv.slice(2)
+// get console input
+const address = process.argv.slice(2)[0]
+const args = minimist(process.argv.slice(3))
+
 let TARGET_ADDRESS = ""
 let PAYABLE = false
+let LEVERAGE = false
+let ALARM = false
 
-if (!arg[0]) {
-  console.log("please input target address!")
+// config the monor address and mode
+if (!address) {
+  console.log(chalk.red("please input target address!"))
   process.exit(1)
 } else {
-  if (ethers.utils.isAddress(arg[0])) TARGET_ADDRESS = arg[0]
+  if (ethers.utils.isAddress(address)) TARGET_ADDRESS = address
   else {
     console.log(chalk.red("invalid address!"))
     process.exit(1)
   }
 }
 
-if (arg[1] == "payable") PAYABLE = true
-else {
-  if (arg[1] == "free" || arg[1] == null) PAYABLE = false
-  else {
-    console.log(chalk.red(`can't resolve argument: '${arg[1]}'`))
-    process.exit(1)
-  }
-}
+if (args.payable) PAYABLE = true
 
-if (arg[2]) {
-  console.log(chalk.red(`too many arguments!`))
-  process.exit(1)
-}
+if (args.leverage) LEVERAGE = true
+
+if (args.alarm) ALARM = true
 
 // config the loading animation
 const loader = new LoadingAnimation(`🕵️‍♀️  monitoring...`)
@@ -66,43 +65,57 @@ const alchemy_subscribe = async (network, address) => {
   const provider = new ethers.providers.JsonRpcProvider(alchemy_url_2)
 
   let wallet
-  if (network == "mainnet")
+  let wallet1
+  if (network == "mainnet") {
     wallet = new ethers.Wallet(process.env.MAINNET_PRIVATE_KEY, provider)
-
-  if (network == "rinkeby")
+    wallet1 = new ethers.Wallet(process.env.MAINNET_PRIVATE_KEY_1, provider)
+  }
+  if (network == "rinkeby") {
     wallet = new ethers.Wallet(process.env.RINKEBY_PRIVATE_KEY, provider)
-  // config the banner
-  printBanner(
-    `Monitoring Info`,
-    [
-      {
-        label: "🌎 Current Network",
-        content: network,
-      },
-      {
-        label: "👻 Mode",
-        content: PAYABLE ? "payable" : "free",
-      },
-      {
-        label: "👛 Current Main Wallet",
-        content: await wallet.getAddress(),
-      },
-      {
-        label: "💰 Wallet Balance",
-        content: `${ethers.utils.formatEther(await wallet.getBalance())}Ξ`,
-      },
-      {
-        label: "💻 Monored Address",
-        content: address,
-      },
+    wallet1 = new ethers.Wallet(process.env.RINKEBY_PRIVATE_KEY_1, provider)
+  }
 
-      {
-        label: "📧 E-mail",
-        content: `${process.env.EMAIL_ACCOUNT}@qq.com`,
-      },
-    ],
-    80
-  )
+  // config the banner
+  let banner = [
+    {
+      label: "🌎 Current Network",
+      content: network,
+    },
+    {
+      label: "👻 Mode",
+      content:
+        (PAYABLE ? "payable" : "free") +
+        (LEVERAGE ? " & leverage" : "") +
+        (ALARM ? " & alarm" : ""),
+    },
+    {
+      label: "👛 Current Main Wallet ",
+      content: await wallet.getAddress(),
+    },
+    {
+      label: "💰 Wallet Balance",
+      content: `${ethers.utils.formatEther(await wallet.getBalance())}Ξ`,
+    },
+    {
+      label: "💻 Monored Address",
+      content: address,
+    },
+    {
+      label: "📧 E-mail",
+      content: `${process.env.EMAIL_ACCOUNT}@qq.com`,
+    },
+  ]
+  if (LEVERAGE) {
+    banner.splice(3, 0, {
+      label: "👛 Current Main Wallet 2 ",
+      content: await wallet1.getAddress(),
+    })
+    banner.splice(5, 0, {
+      label: "💰 Wallet 2 Balance",
+      content: `${ethers.utils.formatEther(await wallet1.getBalance())}Ξ`,
+    })
+  }
+  printBanner(`Monitoring Info`, banner, 100)
   loader.start()
   let minted = []
   web3.eth.subscribe(
@@ -143,69 +156,95 @@ const alchemy_subscribe = async (network, address) => {
                       })
                       if (!paramIncludesAddress && method.inputs.length == 1) {
                         if (
-                          txInfo.input.slice(txInfo.input.length - 2) <=
-                          mint_amount
+                          method.inputs[0].type == "uint8" ||
+                          method.inputs[0].type == "uint256"
                         ) {
-                          let mintedAddress = await getMinted()
-                          if (!mintedAddress.includes(txInfo.to)) {
-                            try {
-                              writeMinted(txInfo.to)
-                              console.log("🚚 sending transaction...")
-                              let follow_tx = await wallet.sendTransaction({
-                                to: txInfo.to,
-                                gasLimit: txInfo.gas,
-                                data: txInfo.input,
-                                maxPriorityFeePerGas:
-                                  txInfo.maxPriorityFeePerGas,
-                                maxFeePerGas: txInfo.maxFeePerGas,
-                                value: txInfo.value,
-                              })
-                              await follow_tx.wait()
-                              playSound()
-                              console.log(
-                                chalk.green(
-                                  `✅ success! check the transaction info: https://etherscan.io/tx/${follow_tx.hash}`
-                                )
-                              )
-                              minted.push(txInfo.to)
-                              // write the logs
-                              writeLog(TARGET_ADDRESS, {
-                                contractAddress: txInfo.to,
-                                txHash: txInfo.hash,
-                                time: time.toLocaleString(),
-                              })
-                              // send email
-                              if (
-                                process.env.EMAIL_ACCOUNT &&
-                                process.env.EMAIL_PASSWARD
-                              ) {
-                                try {
-                                  await sendEmail(
-                                    "发送mint交易😊",
-                                    `<b>MINT 成功, 下方链接跳转etherscan</b><p>https://${
-                                      network == "mainnet" ? "" : network + "."
-                                    }etherscan.io/tx/${txInfo.hash}</p>`
+                          if (
+                            txInfo.input.slice(txInfo.input.length - 2) <=
+                            mint_amount
+                          ) {
+                            let mintedAddress = await getMinted()
+                            if (!mintedAddress.includes(txInfo.to)) {
+                              try {
+                                console.log("🚚 sending transaction...")
+                                writeMinted(txInfo.to)
+                                let sendPromise = [
+                                  wallet.sendTransaction({
+                                    to: txInfo.to,
+                                    gasLimit: txInfo.gas,
+                                    data: txInfo.input,
+                                    maxPriorityFeePerGas:
+                                      txInfo.maxPriorityFeePerGas,
+                                    maxFeePerGas: txInfo.maxFeePerGas,
+                                    value: txInfo.value,
+                                  }),
+                                ]
+                                if (LEVERAGE)
+                                  sendPromise.push(
+                                    wallet1.sendTransaction({
+                                      to: txInfo.to,
+                                      gasLimit: txInfo.gas,
+                                      data: txInfo.input,
+                                      maxPriorityFeePerGas:
+                                        txInfo.maxPriorityFeePerGas,
+                                      maxFeePerGas: txInfo.maxFeePerGas,
+                                      value: txInfo.value,
+                                    })
                                   )
-                                 
-                                  console.log("📧 Mail sending successed!")
-                                } catch (error) {
-                                  console.log("❌ Mail sending failed!")
+                                let follow_tx = await Promise.all(sendPromise)
+                                // await follow_tx.wait()
+                                if (ALARM) playSound()
+                                for (let tx of follow_tx) {
+                                  console.log(
+                                    chalk.green(
+                                      `✅ success! check the transaction info: https://etherscan.io/tx/${tx.hash}`
+                                    )
+                                  )
                                 }
+                                minted.push(txInfo.to)
+                                // write the logs
+                                writeLog(TARGET_ADDRESS, {
+                                  contractAddress: txInfo.to,
+                                  txHash: txInfo.hash,
+                                  time: time.toLocaleString(),
+                                })
+                                // send email
+                                if (
+                                  process.env.EMAIL_ACCOUNT &&
+                                  process.env.EMAIL_PASSWARD
+                                ) {
+                                  try {
+                                    await sendEmail(
+                                      "发送mint交易😊",
+                                      `<b>MINT 成功, 下方链接跳转etherscan</b><p>https://${
+                                        network == "mainnet"
+                                          ? ""
+                                          : network + "."
+                                      }etherscan.io/tx/${txInfo.hash}</p>`
+                                    )
+                                    console.log("📧 Mail sending successed!")
+                                  } catch (error) {
+                                    console.log("❌ Mail sending failed!")
+                                  }
+                                }
+                                loader.start()
+                              } catch (error) {
+                                console.error(error.message)
                               }
+                            } else {
+                              console.log(
+                                chalk.red("❌ this nft has been minted")
+                              )
                               loader.start()
-                            } catch (error) {
-                              console.error(error.message)
                             }
                           } else {
                             console.log(
-                              chalk.red("❌ this nft has been minted")
+                              chalk.red("❌ minting amount is more than 3")
                             )
                             loader.start()
                           }
                         } else {
-                          console.log(
-                            chalk.red("❌ minting amount is more than 3")
-                          )
+                          console.log(chalk.red("❌ paramter type error"))
                           loader.start()
                         }
                       } else {
