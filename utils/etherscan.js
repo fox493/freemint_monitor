@@ -1,8 +1,10 @@
 import axios from "axios"
+import dotenv from 'dotenv'
+dotenv.config('.env')
 
 const ETHERSCAN_URL = "https://api.etherscan.io/api"
-const LOCAL_PROXY = { protocol: "http", host: "127.0.0.1", port: "56554" }
-const ETHERSCAN_API = "G4HD326AFWRFWHYZI1XEZYDMCNZN8BQKB5"
+// const LOCAL_PROXY = { protocol: "http", host: "127.0.0.1", port: "56554" }
+const ETHERSCAN_API = process.env.ETHERSCAN_KEY
 
 // 根据钱包地址获取交易信息
 const getTxInfoByUserAddress = async (address, startblock, endblock) => {
@@ -58,7 +60,7 @@ const sendAxiosRequest = async (params) => {
   return await axios({
     url: ETHERSCAN_URL,
     params,
-    proxy: LOCAL_PROXY,
+    // proxy: LOCAL_PROXY,
   })
 }
 
